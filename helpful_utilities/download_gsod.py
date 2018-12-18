@@ -1,4 +1,6 @@
 """
+Set of functions to download station information and data from GSOD.
+
 Modified from https://github.com/tagomatech/ETL/blob/master/gsod/gsod.py
 """
 
@@ -79,7 +81,22 @@ def station_search(options):
 
 def get_data(station=None, start=datetime.now().year, end=datetime.now().year, **kwargs):
     '''
-    Get weather data from the internet as memory stream
+    Get weather data from the NCDC site, and return as dataframe.
+
+    Parameters
+    ----------
+    station : str
+        Numeric identifier for station. Use form returned by station_search function.
+    start : int
+        Year to start getting data (inclusive)
+    end : int
+        Year to finish getting data (inclusive)
+
+    Returns
+    -------
+    big_df : pandas dataframe
+        Dataframe containing the weather information for the specified station and years.
+
     '''
     big_df = pd.DataFrame()
 
@@ -89,8 +106,6 @@ def get_data(station=None, start=datetime.now().year, end=datetime.now().year, *
         url = 'http://www1.ncdc.noaa.gov/pub/data/gsod/' + str(year) + '/' + str(station) \
             + '-' + str(year) + '.op.gz'
 
-        print('Getting data from %s' % url)
-
         # Define data stream
         stream = requests.get(url)
 
@@ -98,7 +113,6 @@ def get_data(station=None, start=datetime.now().year, end=datetime.now().year, *
         try:
             decomp_bytes = gzip.decompress(stream.content)
         except OSError:  # case where file does not exist
-            print('Missing data for %i at station %s' % (year, station))
             continue
 
         data = decomp_bytes.decode('utf-8').split('\n')
@@ -156,10 +170,10 @@ def get_data(station=None, start=datetime.now().year, end=datetime.now().year, *
         *       : derived => d
         '''
         max_temp_flag = [re.sub(pattern=' ', repl='e', string=x) for x in max_temp_flag]  # List comprenhension
-        max_temp_flag = [re.sub(pattern='\*', repl='d', string=x) for x in max_temp_flag]
+        max_temp_flag = [re.sub(pattern=r"\*", repl='d', string=x) for x in max_temp_flag]
 
         min_temp_flag = [re.sub(pattern=' ', repl='e', string=x) for x in min_temp_flag]
-        min_temp_flag = [re.sub(pattern='\*', repl='d', string=x) for x in min_temp_flag]
+        min_temp_flag = [re.sub(pattern=r"\*", repl='d', string=x) for x in min_temp_flag]
 
         '''
         Create dataframe & cleanse data
