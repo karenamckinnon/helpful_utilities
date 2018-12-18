@@ -222,6 +222,4 @@ def get_data(station=None, start=datetime.now().year, end=datetime.now().year, *
 
         big_df = pd.concat([big_df, df])
 
-        print('station: {}, year {}\tDone!'.format(str(station), str(year)))
-
     return big_df
