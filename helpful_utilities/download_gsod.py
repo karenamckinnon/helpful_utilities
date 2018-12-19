@@ -79,7 +79,7 @@ def station_search(options):
         print(e)
 
 
-def get_data(station=None, start=datetime.now().year, end=datetime.now().year, **kwargs):
+def get_data(station=None, start=datetime.now().year, end=datetime.now().year):
     '''
     Get weather data from the NCDC site, and return as dataframe.
 
