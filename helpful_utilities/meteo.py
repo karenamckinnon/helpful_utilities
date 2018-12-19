@@ -85,17 +85,18 @@ def HI_from_T_RH(T, RH):
     # Calculate simple version first
     HI = 0.5*(T_F + 61.0 + ((T_F - 68.0)*1.2) + (RH*0.094))
 
-    if HI > 80:
+    # Complex version used if HI > 80
+    HI2 = (-42.379 + 2.04901523*T_F + 10.14333127*RH - .22475541*T_F*RH - .00683783*T_F**2 - .05481717*RH**2 +
+           .00122874*T_F**2*RH + .00085282*T_F*RH**2 - .00000199*T_F**2*RH**2)
 
-        HI = (-42.379 + 2.04901523*T_F + 10.14333127*RH - .22475541*T_F*RH - .00683783*T_F**2 - .05481717*RH**2 +
-              .00122874*T_F**2*RH + .00085282*T_F*RH**2 - .00000199*T_F**2*RH**2)
+    idx_correction1 = ((RH < 13) & (T_F >= 80) & (T_F <= 112))
+    correction = (13 - RH)/4*np.sqrt((17 - np.abs(T_F - 95))/17)
+    HI2[idx_correction1] -= correction[idx_correction1]
 
-        if ((RH < 13) & (T_F >= 80) & (T_F <= 112)):
-            correction = (13 - RH)/4*np.sqrt((17 - np.abs(T_F - 95))/17)
-            HI -= correction
+    idx_correction2 = ((RH > 85) & (T_F >= 80) & (T_F <= 87))
+    correction = ((RH - 85)/10)*((87 - T_F)/5)
+    HI2[idx_correction2] += correction[idx_correction2]
 
-        if ((RH > 85) & (T_F >= 80) & (T_F <= 87)):
-            correction = ((RH - 85)/10)*((87 - T_F)/5)
-            HI += correction
+    HI[HI > 80] = HI2[HI > 80]
 
     return HI
