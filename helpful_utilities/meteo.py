@@ -29,18 +29,17 @@ def q_from_Td_p(Td, p):
     Td : float or numpy array
         Dew point temperature in Celsius
     p : float or numpy array
-        Air pressure in Pa
+        Surface pressure in mbar
 
     Returns
     -------
     e : float or numpy array
-        The specific humidity in g kg**-1
+        The specific humidity in g/kg
 
     """
 
-    ea = 0.6108*np.exp(17.27*Td/(Td + 237.3))  # kPa
-    ea *= 1e3  # Pa
-    q = ea/p  # unitless
+    ea = 6.108*np.exp(17.27*Td/(Td + 237.3))  # mbar
+    q = (0.622*ea)/(p - (0.378*ea))  # kg/kg
     q *= 1e3  # g/kg
 
     return q
