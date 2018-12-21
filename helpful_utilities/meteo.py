@@ -21,22 +21,29 @@ def RH_from_Td_T(Td, T):
     return 100*np.exp(17.27*Td/(Td + 237.3))/np.exp(17.27*T/(T + 237.3))
 
 
-def e_from_Td(Td):
-    """Calculate the specific humidity from dewpoint using standard approximations.
+def q_from_Td_p(Td, p):
+    """Calculate the specific humidity from dewpoint and pressure using standard approximations.
 
     Parameters
     ----------
     Td : float or numpy array
         Dew point temperature in Celsius
+    p : float or numpy array
+        Air pressure in Pa
 
     Returns
     -------
     e : float or numpy array
-        The specific humidity (kPa)
+        The specific humidity in g kg**-1
 
     """
 
-    return 0.6108*np.exp(17.27*Td/(Td + 237.3))
+    ea = 0.6108*np.exp(17.27*Td/(Td + 237.3))  # kPa
+    ea *= 1e3  # Pa
+    q = ea/p  # unitless
+    q *= 1e3  # g/kg
+
+    return q
 
 
 def VPD_from_Td_T(Td, T):
