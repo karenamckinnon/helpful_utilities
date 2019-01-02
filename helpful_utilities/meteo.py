@@ -34,7 +34,7 @@ def humidex_from_Td_T(Td, T):
     Returns
     -------
     humidex : float or numpy array
-        Humidex index
+        Humidex index, deg C
 
     """
 
