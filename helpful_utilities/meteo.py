@@ -21,6 +21,26 @@ def RH_from_Td_T(Td, T):
     return 100*np.exp(17.27*Td/(Td + 237.3))/np.exp(17.27*T/(T + 237.3))
 
 
+def humidex_from_Td_T(Td, T):
+    """Calculate the humidex value perCanada's Atmospheric Environment Service.
+
+    Parameters
+    ----------
+    Td : float or numpy array
+        Dew point temperature in Celsius
+    T : float or numpy array
+        Temperature in Celsius
+
+    Returns
+    -------
+    humidex : float or numpy array
+        Humidex index
+
+    """
+
+    return T + 0.5555*(6.11*np.exp(5417.7530*(1/273.16 - 1/(273.15 + Td)))-10)
+
+
 def q_from_Td_p(Td, p):
     """Calculate the specific humidity from dewpoint and pressure using standard approximations.
 
