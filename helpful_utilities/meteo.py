@@ -41,28 +41,115 @@ def humidex_from_Td_T(Td, T):
     return T + 0.5555*(6.11*np.exp(5417.7530*(1/273.16 - 1/(273.15 + Td)))-10)
 
 
-def q_from_Td_p(Td, p):
-    """Calculate the specific humidity from dewpoint and pressure using standard approximations.
+def e_from_Td_T_p(Td, T, p):
+    """Calculate the vapor pressure from dewpoint, temperature and pressure.
+
+    Temperature is used to determine whether vapor pressure needs to be calculated with respect to ice.
+    Using the "quick and dirty one-thirds rule" to calculate wet bulb temperature.
+    This could be improved, but right now my focus is summer so won't be very relevant.
 
     Parameters
     ----------
     Td : float or numpy array
         Dew point temperature in Celsius
+    T : float or numpy array
+        Temperature in Celsius
     p : float or numpy array
-        Surface pressure in mbar
+        Station pressure in mbar (or hPa)
 
     Returns
     -------
     e : float or numpy array
+        Vapor pressure with respect to water or ice (hPa)
+    """
+
+    Tw_est = 2/3*T + 1/3*Td  # estimate of wetbulb temperature
+    fw = 1 + 7e-4 + 3.46e-6*p
+    fi = 1 + 3e-4 + 4.18e-6*p
+
+    ew = 6.1121*fw*np.exp((Td*(18.729 - (Td/227.3)))/(257.87 + Td))
+    ei = 6.1115*fi*np.exp((Td*(23.036 - (Td/333.7)))/(279.82 + Td))
+
+    e = ew.copy()
+    e[Tw_est < 0] = ei[Tw_est < 0]
+
+    return e
+
+
+def q_from_e_p(e, p):
+    """Calculate the specific humidity from vapor pressure and pressure following Willett et al (2014).
+
+    Parameters
+    ----------
+    e : float or numpy array
+        Vapor pressure (mbar or hPa)
+    p : float or numpy array
+        Station pressure in mbar (or hPa)
+
+    Returns
+    -------
+    q : float or numpy array
         The specific humidity in g/kg
 
     """
 
-    ea = 6.108*np.exp(17.27*Td/(Td + 237.3))  # mbar
-    q = (0.622*ea)/(p - (0.378*ea))  # kg/kg
-    q *= 1e3  # g/kg
+    q = 1000*(0.622*e/(p - 0.378*e))
 
     return q
+
+
+def stp_from_slp(slp, T, z):
+    """Calculate station pressure from sea level pressure, temperature, and height following Willett et al (2014).
+
+    Parameters
+    ----------
+    slp : float or array
+        Sea level pressure (hPa)
+    T : float or array
+        Temperature (C)
+    z : float
+        Station elevation
+
+    Returns
+    -------
+    stp : float or array
+        Estimate of pressure at the location of the station
+    """
+
+    T_K = T + 273.15  # temperature in Kelvin
+    stp = slp*(T_K / (T_K + 0.0065*z))**5.625
+
+    return stp
+
+
+def q_from_GSOD_vars(df, z):
+    """Calculate the specific from available variables in GSOD.
+
+    Essentially a wrapper function for a bunch of conversions.
+    Pressure data is intermittent, so using seasonal cycle as best estimate
+
+    Parameters
+    ----------
+    df : pandas dataframe
+        Dataframe containing GSOD data for a given station
+    z : float
+        Elevation (m) for the station
+
+    Returns
+    -------
+    df : pandas dataframe
+        Original dataframe with additional column containing q
+    """
+
+    # TODO: fix this script!! Deal with pressure via 20CR
+    # Check if there are missing station pressures
+    missing_stp = np.sum(np.isnan(df['stp'].values))
+
+    if missing_stp > 0:
+        # Calculate station pressure
+        stp = stp_from_slp(df['slp'].values, df['temp'].values, z)
+
+    # If we have station pressure measurements, confirm consistency
 
 
 def VPD_from_Td_T(Td, T):
