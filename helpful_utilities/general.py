@@ -1,4 +1,4 @@
-def linear_detrend(X, y, add_intercept=True, remove_mean=True):
+def fit_OLS(X, y, add_intercept=True, remove_mean=True):
     """Calculate the MLE of the OLS linear trend in data, y, given covariates, X.
 
     Parameters
