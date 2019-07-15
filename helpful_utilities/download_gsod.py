@@ -222,4 +222,7 @@ def get_data(station=None, start=datetime.now().year, end=datetime.now().year):
 
         big_df = pd.concat([big_df, df])
 
+    # Reset index
+    big_df = big_df.reset_index()
+
     return big_df
