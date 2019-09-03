@@ -1,6 +1,30 @@
 import numpy as np
 
 
+def Td_from_RH_T(RH, T):
+    """Calculate the dewpoint temperature using the Magnus approximation.
+
+    Parameters
+    ----------
+    RH : float or numpy array
+        The relative humidity, [0, 100]
+    T : float or numpy array
+        Temperature in Celsius
+
+    Returns
+    -------
+    Td : float or numpy array
+        Dew point temperature in Celsius
+    """
+
+    b = 17.67
+    c = 243.5  # deg C
+    gamma = np.log(RH/100) + b*T/(c + T)
+    Td = c*gamma/(b - gamma)
+
+    return Td
+
+
 def RH_from_Td_T(Td, T):
     """Calculate the relative humidity value using the Magnus approximation.
 
