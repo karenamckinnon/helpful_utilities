@@ -1,6 +1,59 @@
 import numpy as np
 
 
+def Td_from_r_p(r, p):
+    """Calculate the dewpoint temperature using the Magnus approximation.
+
+    Parameters
+    ----------
+    r : float or numpy array
+        The water vapor mixing ratio (kg/kg)
+    p : float or numpy array
+        Pressure (hPa)
+
+    Returns
+    -------
+    Td : float or numpy array
+        Dew point temperature in Celsius
+    """
+
+    # First, convert mixing ratio to vapor pressure
+    E = r*p/(0.622 + r)
+
+    a = 6.112
+    b = 17.67
+    c = 243.5  # deg C
+
+    Td = c*np.log(E/a)/(b - np.log(E/a))
+
+    return Td
+
+
+def P_from_SLP_Z(SLP, Z, T):
+    """Approximate station/gridpoint pressure from sea level pressure, elevation, and temperature.
+
+    Uses the approximation of List (1963) as referenced in Willett et al (2014)
+
+    Parameters
+    ----------
+    SLP : float or numpy array
+        Sea level pressure (hPa)
+    Z : float or numpy array
+        Elevation (meters)
+    T : float or numpy array
+        Temperature (Kelvin)
+
+    Returns
+    -------
+    P : float or numpy array
+        Approximated station pressure (hPa)
+    """
+
+    P = SLP*(T/(T + 0.0065*Z))**5.625
+
+    return P
+
+
 def Td_from_RH_T(RH, T):
     """Calculate the dewpoint temperature using the Magnus approximation.
 
