@@ -46,3 +46,35 @@ def fit_OLS(X, y, add_intercept=True, remove_mean=True):
     beta = np.array(beta).flatten()
 
     return beta, yhat
+
+
+def lowpass_butter(fs, lowcut, order,  data, axis=-1):
+    """Perform a lowpass butterworth filter on data using a forward and backward digital filter.
+
+    Parameters
+    ----------
+    fs : float
+        Sampling frequency of data (example: 12 for monthly data)
+    lowcut : float
+        Critical frequency for Butterworth filter. See scipy docs.
+    order : int
+        Order of filter. Note that filtfilt doubles the original filter order.
+    data : numpy array
+        1D vector or 2D array to be filtered
+    axis : int
+        Axis along which filtering is performed.
+
+    Returns
+    -------
+    data_filtered : numpy array
+        Filtered data
+
+    """
+    from scipy.signal import butter, filtfilt
+
+    nyq = 0.5 * fs  # Nyquist frequency
+    low = lowcut / nyq
+    b, a = butter(order, low, btype='low')  # Coefficients for Butterworth filter
+    filtered = filtfilt(b, a, data, axis=axis)
+
+    return filtered
