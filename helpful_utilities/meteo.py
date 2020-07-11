@@ -1,12 +1,12 @@
 import numpy as np
 
 
-def Td_from_r_p(r, p):
+def Td_from_w_p(w, p):
     """Calculate the dewpoint temperature using the Magnus approximation.
 
     Parameters
     ----------
-    r : float or numpy array
+    w : float or numpy array
         The water vapor mixing ratio (kg/kg)
     p : float or numpy array
         Pressure (hPa)
@@ -17,14 +17,18 @@ def Td_from_r_p(r, p):
         Dew point temperature in Celsius
     """
 
-    # First, convert mixing ratio to vapor pressure
-    E = r*p/(0.622 + r)
+    # Mixing ratio -> specific humidity
+    q = w/(1 + w)
 
+    # Specific humidity -> vapor pressure
+    e = q*p/(0.622 + 0.378*q)
+
+    # vapor pressure -> dewpoint
     a = 6.112
     b = 17.67
     c = 243.5  # deg C
 
-    Td = c*np.log(E/a)/(b - np.log(E/a))
+    Td = c*np.log(e/a)/(b - np.log(e/a))
 
     return Td
 
