@@ -19,7 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def bivariate_fit(xi, yi, dxi, dyi, ri=0.0, b0=1.0, maxIter=1e6):
+def bivariate_fit(xi, yi, dxi, dyi, ri=0.0, b0=1.0, maxIter=1e6, tol=1e-6):
     """Make a linear bivariate fit to xi, yi data using York et al. (2004).
 
     This is an implementation of the line fitting algorithm presented in:
@@ -36,6 +36,7 @@ def bivariate_fit(xi, yi, dxi, dyi, ri=0.0, b0=1.0, maxIter=1e6):
       ri          correlation coefficient for the weights
       b0          initial guess b
       maxIter     float, maximum allowed number of iterations
+      tol         float, max difference between b values before convergence
 
     Returns:
       a           y-intercept, y = a + bx
@@ -57,10 +58,6 @@ def bivariate_fit(xi, yi, dxi, dyi, ri=0.0, b0=1.0, maxIter=1e6):
 
     alphai = (wxi * wyi)**0.5
     b_diff = 999.0
-
-    # tolerance for the fit, when b changes by less than tol for two
-    # consecutive iterations, fit is considered found
-    tol = 1.0e-8
 
     # iterate until b changes less than tol
     iIter = 1
