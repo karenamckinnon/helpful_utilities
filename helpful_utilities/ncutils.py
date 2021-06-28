@@ -62,3 +62,15 @@ def ncdump(nc_fid, verb=True):
                 print("\t\tsize:", nc_fid.variables[var].size)
                 print_ncattr(var)
     return nc_attrs, nc_dims, nc_vars
+
+
+def lon_to_360(da):
+    """Returns the xr.DataArray with longitude changed from -180, 180 to 0, 360"""
+    da = da.assign_coords({'lon': (da.lon + 360) % 360})
+    return da.sortby('lon')
+
+
+def lon_to_180(da):
+    """Returns the xr.DataArray with longitude changed from 0, 360 to -180, 180"""
+    da = da.assign_coords({'lon': (((da.lon + 180) % 360) - 180)})
+    return da.sortby('lon')
