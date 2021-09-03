@@ -1,3 +1,9 @@
+import xarray as xr
+from rasterio import features
+from affine import Affine
+import numpy as np
+
+
 def ncdump(nc_fid, verb=True):
     '''
     ncdump outputs dimensions, variables and their attribute information.
@@ -74,3 +80,25 @@ def lon_to_180(da):
     """Returns the xr.DataArray with longitude changed from 0, 360 to -180, 180"""
     da = da.assign_coords({'lon': (((da.lon + 180) % 360) - 180)})
     return da.sortby('lon')
+
+
+# Via Stephan Hoyer, https://github.com/pydata/xarray/issues/501
+def transform_from_latlon(lat, lon):
+    lat = np.asarray(lat)
+    lon = np.asarray(lon)
+    trans = Affine.translation(lon[0], lat[0])
+    scale = Affine.scale(lon[1] - lon[0], lat[1] - lat[0])
+    return trans * scale
+
+
+def rasterize(shapes, coords, fill=np.nan, **kwargs):
+    """Rasterize a list of (geometry, fill_value) tuples onto the given
+    xray coordinates. This only works for 1d latitude and longitude
+    arrays.
+    """
+    transform = transform_from_latlon(coords['lat'], coords['lon'])
+    out_shape = (len(coords['lat']), len(coords['lon']))
+    raster = features.rasterize(shapes, out_shape=out_shape,
+                                fill=fill, transform=transform,
+                                dtype=float, **kwargs)
+    return xr.DataArray(raster, coords=coords, dims=('lat', 'lon'))
