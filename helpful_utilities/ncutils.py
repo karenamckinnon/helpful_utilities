@@ -70,16 +70,16 @@ def ncdump(nc_fid, verb=True):
     return nc_attrs, nc_dims, nc_vars
 
 
-def lon_to_360(da):
+def lon_to_360(da, lon_name='lon'):
     """Returns the xr.DataArray with longitude changed from -180, 180 to 0, 360"""
-    da = da.assign_coords({'lon': (da.lon + 360) % 360})
-    return da.sortby('lon')
+    da = da.assign_coords({lon_name: (da[lon_name] + 360) % 360})
+    return da.sortby(lon_name)
 
 
-def lon_to_180(da):
+def lon_to_180(da, lon_name='lon'):
     """Returns the xr.DataArray with longitude changed from 0, 360 to -180, 180"""
-    da = da.assign_coords({'lon': (((da.lon + 180) % 360) - 180)})
-    return da.sortby('lon')
+    da = da.assign_coords({lon_name: (((da[lon_name] + 180) % 360) - 180)})
+    return da.sortby(lon_name)
 
 
 # Via Stephan Hoyer, https://github.com/pydata/xarray/issues/501
