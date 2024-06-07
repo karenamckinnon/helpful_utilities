@@ -5,6 +5,8 @@ Functions for statistical modeling.
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.signal import butter, filtfilt
+from scipy import stats
+import xarray as xr
 
 
 def fit_OLS(X, y, add_intercept=True, remove_mean=True):
@@ -165,3 +167,106 @@ def pmtm(x, dt, nw=3, cl=0.95):
     ci[:, 1] = 1./(1-2/(9*v) + 1.96*np.sqrt(2/(9*v)))**3
 
     return P, s, ci
+
+
+def get_pvalue(x, y):
+    """
+    Calculate a p-value from OLS regression between x and y
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        A 1D array of the x values for the regression
+    y : numpy.ndarray
+        A 1D array of the y values for the regression
+
+    Returns
+    -------
+    pvalue : float
+        The p-value estimated for the regression using linregress in scipy
+    """
+
+    if np.isnan(y).any():
+        return np.nan
+    else:
+        out = stats.linregress(x, y)
+        return out.pvalue
+
+
+def get_FDR_cutoff(da_pval, alpha_fdr=0.1):
+    """
+    Calculate the pvalue for significance using a false discovery rate approach.
+
+    Parameters
+    ----------
+    da_pval : xarray.DataArray
+        Contains pvalues for a field (can included nan values)
+    alpha_fdr : float
+        The false discovery rate control
+
+    Returns
+    -------
+    cutoff_pval : float
+        The highest pvalue for significance
+    """
+
+    pval_vec = da_pval.data.flatten()
+    has_data = ~np.isnan(pval_vec)
+    pval_vec = pval_vec[has_data]
+
+    a = np.arange(len(pval_vec)) + 1
+    # find last index where the sorted p-values are equal to or below a line with slope alpha_fdr
+    cutoff_idx = np.where(np.sort(pval_vec) <= alpha_fdr*a/len(a))[0][-1]
+    cutoff_pval = np.sort(pval_vec)[cutoff_idx]
+
+    return cutoff_pval
+
+
+def get_slope(x, y):
+    """
+    Regress two data arrays against each other
+    """
+    pl = (~np.isnan(x)) & (~np.isnan(y))
+    if pl.any():
+        out = stats.linregress(x[pl], y[pl])
+        return out.slope
+    else:
+        return np.nan
+
+
+def get_residual(x, y):
+    """
+    Get the residual after regressing out x from y
+    """
+    pl = (~np.isnan(x)) & (~np.isnan(y))
+    if pl.any():
+        out = stats.linregress(x[pl], y[pl])
+        yhat = out.intercept + out.slope*x
+        residual = y - yhat
+        return residual
+    else:
+        return np.nan*np.ones((len(x), ))
+
+
+def calc_p_for_ds(ds, trend_dim='year'):
+    """
+    Calculate the p-value for a linear trend (in trend_dim) for a dataset or dataarray
+
+    Parameters
+    ----------
+    ds : xr.DataArray or xr.Dataset
+        Contains data for trend fitting. Should be trend_dim x lat x lon
+    trend_dim : str
+        Name of dimension trend is calculated over
+
+    Returns
+    -------
+    ds_pval : xr.DataArray or xr.Dataset
+        A lat x lon array containing p-values for the linear trend
+    """
+    ds_pval = xr.apply_ufunc(get_pvalue,
+                             ds[trend_dim],
+                             ds,
+                             input_core_dims=[[trend_dim], [trend_dim]],
+                             vectorize=True)
+    return ds_pval
