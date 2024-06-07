@@ -1,7 +1,6 @@
 """
-Set of functions to download station information and data from GSOD.
-
-Modified from https://github.com/tagomatech/ETL/blob/master/gsod/gsod.py
+Helper functions for downloading various types of station data.
+GSOD functions are modified from https://github.com/tagomatech/ETL/blob/master/gsod/gsod.py
 """
 
 import gzip
@@ -12,7 +11,7 @@ import pandas as pd
 from datetime import datetime
 
 
-def station_search(options):
+def station_search_GSOD(options):
     '''
     Return a pandas dataframe containing the metadata for GSOD stations.
 
@@ -79,7 +78,7 @@ def station_search(options):
         print(e)
 
 
-def get_data(station=None, start=datetime.now().year, end=datetime.now().year):
+def get_data_GSOD(station=None, start=datetime.now().year, end=datetime.now().year):
     '''
     Get weather data from the NCDC site, and return as dataframe.
 
