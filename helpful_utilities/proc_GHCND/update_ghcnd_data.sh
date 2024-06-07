@@ -24,9 +24,11 @@ else
     echo "Not updating GHCND .dly files"
 fi
 
+# Important: the default variable is TMAX. See the function for documentation of options
+# process_ghcnd(yr_start, yr_end, ghcnd_dir='/home/data/GHCND', var_names=['TMAX'], country_list=None)
 if $make_ncs
 then
-    python -c'from summer_extremes import utils; utils.process_ghcnd(1979, 2023)'
+    python -c'from helpful_utilities import stations; stations.process_ghcnd(1979, 2023)'
 else
     echo "Not making netcdf files"
 fi
