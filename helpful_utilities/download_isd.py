@@ -80,7 +80,12 @@ if __name__ == '__main__':
     parser.add_argument('savedir', type=str, help='full path to directory where to save files')
     parser.add_argument('start_date', type=str, help='YYYY-MM-DD')
     parser.add_argument('end_date', type=str, help='YYYY-MM-DD')
-    parser.add_argument('ctry', type=str, help='2 letter country abbreviation e.g. US, CA')
+    parser.add_argument('ctry', type=str, help='2 letter abbreviation, or list e.g. CA,US (no space between), or None')
+    parser.add_argument('state', type=str, help='2 letter abbreviation, or list, or None')
+    parser.add_argument('lat1', type=float, help='lower lat')
+    parser.add_argument('lat2', type=float, help='upper lat')
+    parser.add_argument('lon1', type=float, help='lower lon')
+    parser.add_argument('lon2', type=float, help='upper lon')
 
     args = parser.parse_args()
 
@@ -88,7 +93,12 @@ if __name__ == '__main__':
     savedir = args.savedir
     start_date = args.start_date
     end_date = args.end_date
-    ctry = args.ctry
+    ctry = (args.ctry).split(',')
+    state = (args.state).split(',')
+    lat1 = args.lat1
+    lat2 = args.lat2
+    lon1 = args.lon1
+    lon2 = args.lon2
 
     tmpdir = tmpdir.rstrip('/')
     savedir = savedir.rstrip('/')
@@ -101,28 +111,32 @@ if __name__ == '__main__':
     # Must start at or before start year
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
     end_date = datetime.strptime(end_date, '%Y-%m-%d')
-    exclude_states = ('AK', 'HI')
 
     # Get latest metadata
     url_base = 'https://www.ncei.noaa.gov/data/global-hourly/access'
     url_history = 'ftp://ftp.ncei.noaa.gov/pub/data/noaa/isd-history.csv'
     hist_name = url_history.split('/')[-1]
 
-    if not os.path.isfile('%s/%s' % (savedir, hist_name)):
-        cmd = 'wget -q -O %s/%s %s' % (savedir, hist_name, url_history)
-        check_call(cmd.split())
+    # if not os.path.isfile('%s/%s' % (savedir, hist_name)):
+    cmd = 'wget -q -O %s/%s %s' % (savedir, hist_name, url_history)
+    check_call(cmd.split())
 
     df_meta = pd.read_csv('%s/%s' % (savedir, hist_name))
     dt_begin = np.array([datetime.strptime(str(d), '%Y%m%d') for d in df_meta['BEGIN']])
     dt_end = np.array([datetime.strptime(str(d), '%Y%m%d') for d in df_meta['END']])
-    idx_use = ((dt_begin <= start_date) & (dt_end >= end_date) & (df_meta['CTRY'] == ctry)).values
+    idx_use_time = ((dt_begin <= start_date) & (dt_end >= end_date))
+    idx_use_space = idx_use_time.copy()
+
+    if 'None' not in ctry:
+        idx_use_space = idx_use_space & (np.isin(df_meta['CTRY'], ctry))
+    if 'None' not in state:
+        idx_use_space = idx_use_space & (np.isin(df_meta['STATE'], state))
+    idx_use_lats = (df_meta['LAT'] >= lat1) & (df_meta['LAT'] <= lat2).values
+    idx_use_lons = (df_meta['LON'] >= lon1) & (df_meta['LON'] <= lon2).values
+    idx_use_space = idx_use_space & idx_use_lats & idx_use_lons
 
     df_meta = df_meta.assign(BEGIN=dt_begin, END=dt_end)
-
-    for state in exclude_states:
-        idx_use = idx_use & (df_meta['STATE'] != state)
-
-    df_meta = df_meta[idx_use].reset_index()
+    df_meta = df_meta[idx_use_space].reset_index()
 
     usecols = ['SOURCE', 'REPORT_TYPE', 'CALL_SIGN', 'QUALITY_CONTROL', 'DATE', 'ELEVATION', 'DEW', 'TMP', 'SLP']
     keepcols = ['DATE', 'DEW', 'TMP', 'SLP']
@@ -132,8 +146,8 @@ if __name__ == '__main__':
         savename = '%s/csv/%06d-%05d.csv' % (savedir, int(row['USAF']), int(row['WBAN']))
         if os.path.isfile(savename):
             continue
-        print('%i/%i' % (ct, len(df_meta)))
 
+        print('%i/%i' % (ct, len(df_meta)))
         # download files for each year
         station_id = '%06d%05d' % (int(row['USAF']), int(row['WBAN']))
         yy1 = row['BEGIN'].year
@@ -186,7 +200,15 @@ if __name__ == '__main__':
         resampler = all_df.resample('D')
         count = resampler.count()
         avg_df = resampler.mean()
+        max_df = resampler.max()
+        min_df = resampler.min()
         avg_df[count < 4] = np.nan
+        max_df[count < 4] = np.nan
+        min_df[count < 4] = np.nan
+
+        avg_df = avg_df.assign(TMAX=max_df['TMP'])
+        avg_df = avg_df.assign(TMIN=min_df['TMP'])
+        avg_df = avg_df.assign(TMP_COUNT=count['TMP'])
 
         # get rid of extra index
         avg_df = avg_df.iloc[:, 1:]
@@ -196,11 +218,12 @@ if __name__ == '__main__':
         avg_df = avg_df.rename(columns={'index': 'date'})
 
         # Make sure there are a reasonable number of values
-        if np.sum(~np.isnan(avg_df['Q'])) < 100:
+        if np.sum(~np.isnan(avg_df['TMAX'])) < 100:
             has_data[ct] = False
         else:
             # Save
             avg_df.to_csv(savename, index=False)
+            all_df.to_csv(savename.replace('.csv', '_hourly.csv'))
 
     # remove stations with no data from metadata
     df_meta = df_meta[has_data]
