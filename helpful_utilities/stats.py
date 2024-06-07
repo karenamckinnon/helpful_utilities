@@ -270,3 +270,20 @@ def calc_p_for_ds(ds, trend_dim='year'):
                              input_core_dims=[[trend_dim], [trend_dim]],
                              vectorize=True)
     return ds_pval
+
+
+def p_value_from_synthetic_null_data(obs_data, synth_data, twosided=True):
+    """
+    Estimate a p-value based on the percentile of the observed data within synthetic samples
+    of the null hypothesis
+    """
+
+    all_vec = np.hstack((obs_data, synth_data))
+    obs_idx = np.where(np.argsort(all_vec) == 0)[0][0]  # find where the first entry is in the list
+    pval = obs_idx/len(synth_data)
+    if pval > 0.5:  # other tail
+        pval = 1 - pval
+    if twosided:
+        pval *= 2
+
+    return pval

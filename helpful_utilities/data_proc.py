@@ -3,6 +3,7 @@ Tools for common data preprocessing steps
 """
 import numpy as np
 from helpful_utilities.stats import lowpass_butter
+import xarray as xr
 
 
 def get_smooth_clim(data):
@@ -23,3 +24,28 @@ def get_smooth_clim(data):
         return smooth_data
     else:
         return data
+
+
+def get_trend_array(ds, var_name, trend_normalizer=1, dim='year'):
+    """
+    Get the linear trend of a variable in a dataset.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset containing values for the the trend estimate
+    var_name : str
+        Name of the variable for which we want the trend
+    trend_normalizer : int / float
+        Multiply the trend by this value (e.g. if we want it per X years)
+    dim : str
+        The dimension along which to calculate the trend
+
+    Returns
+    -------
+    da_trend : xr.DataArray
+        Trend (with normalization) for the specific variable
+    """
+
+    beta = ds.polyfit(deg=1, dim=dim)
+    return trend_normalizer*(beta.sel(degree=1)['%s_polyfit_coefficients' % var_name])
