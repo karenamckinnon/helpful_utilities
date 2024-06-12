@@ -287,3 +287,46 @@ def p_value_from_synthetic_null_data(obs_data, synth_data, twosided=True):
         pval *= 2
 
     return pval
+
+
+def get_skewed_distr_gamma(this_skew, N):
+    """
+    Produce N samples of a skewed distribution with zero mean, unity variance using the gamma distribution
+
+    Note that excess kurtosis is a deterministic and increasing function of skewness:
+    skewness = 2/sqrt(k)
+    excess kurtosis = 6/k
+
+    Parameters
+    ----------
+    this_skew : float
+        Desired skewness
+    N : int
+        Number of samples
+
+    Returns
+    -------
+    samples : numpy.array
+        Samples with desired skewness
+    """
+
+    invert = False
+    if this_skew < 0:
+        this_skew *= -1
+        invert = True
+
+    k = (2/this_skew)**2
+    theta = np.sqrt(1/k)
+    samples = stats.gamma.rvs(a=k, scale=theta, size=N)
+
+    if invert:
+        samples *= -1
+
+    samples -= np.mean(samples)
+
+    skew_est = stats.skew(samples)
+
+    print('desired skew: %0.2f' % this_skew)
+    print('sampled skew: %0.2f' % skew_est)
+
+    return samples
