@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def nan_argmax(arr):
     """
     Replicates the behavior of np.argmax but returns NaN if the slice is all NaN.
