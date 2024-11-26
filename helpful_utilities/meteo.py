@@ -1,6 +1,24 @@
 import numpy as np
 
 
+def q_from_Td_p(Td, p):
+    """
+    Calculate specific humidity using approximations in McKinnon et al 2021, NCC.
+
+    Parameters
+    ----------
+    Td : float or numpy array or xarray datarray
+        Dew point temperature in Celsius
+    p : float or numpy array or xarray dataarray
+        Surface pressure (hPa)
+
+    Returns
+    -------
+    q : float or numpy array or xarray datarray
+        Specific humidity (g/kg)
+    """
+
+
 def Td_from_w_p(w, p):
     """Calculate the dewpoint temperature using the Magnus approximation.
 
