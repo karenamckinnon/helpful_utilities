@@ -216,8 +216,12 @@ def get_FDR_cutoff(da_pval, alpha_fdr=0.1):
 
     a = np.arange(len(pval_vec)) + 1
     # find last index where the sorted p-values are equal to or below a line with slope alpha_fdr
-    cutoff_idx = np.where(np.sort(pval_vec) <= alpha_fdr*a/len(a))[0][-1]
-    cutoff_pval = np.sort(pval_vec)[cutoff_idx]
+    cutoff_idx = np.where(np.sort(pval_vec) <= alpha_fdr*a/len(a))[0]
+    if len(cutoff_idx) == 0:
+        cutoff_pval = 0
+    else:
+        cutoff_idx = cutoff_idx[-1]
+        cutoff_pval = np.sort(pval_vec)[cutoff_idx]
 
     return cutoff_pval
 
@@ -323,10 +327,5 @@ def get_skewed_distr_gamma(this_skew, N):
         samples *= -1
 
     samples -= np.mean(samples)
-
-    skew_est = stats.skew(samples)
-
-    print('desired skew: %0.2f' % this_skew)
-    print('sampled skew: %0.2f' % skew_est)
 
     return samples
