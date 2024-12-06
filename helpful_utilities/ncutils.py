@@ -1,6 +1,4 @@
 import xarray as xr
-from rasterio import features
-from affine import Affine
 import numpy as np
 
 
@@ -84,6 +82,7 @@ def lon_to_180(da, lon_name='lon'):
 
 # Via Stephan Hoyer, https://github.com/pydata/xarray/issues/501
 def transform_from_latlon(lat, lon):
+    from affine import Affine
     lat = np.asarray(lat)
     lon = np.asarray(lon)
     trans = Affine.translation(lon[0], lat[0])
@@ -92,6 +91,8 @@ def transform_from_latlon(lat, lon):
 
 
 def rasterize(shapes, coords, fill=np.nan, **kwargs):
+    from rasterio import features
+
     """Rasterize a list of (geometry, fill_value) tuples onto the given
     xray coordinates. This only works for 1d latitude and longitude
     arrays.
@@ -102,3 +103,54 @@ def rasterize(shapes, coords, fill=np.nan, **kwargs):
                                 fill=fill, transform=transform,
                                 dtype=float, **kwargs)
     return xr.DataArray(raster, coords=coords, dims=('lat', 'lon'))
+
+
+def regrid(da, new_lat, new_lon, wgt_file=''):
+    """
+    Regrid either an xarray dataset or dataarray
+
+    Parameters
+    ----------
+    da : xr.Dataset or xr.DataArray
+        Data to be regridded. Needs to be in lat/lon
+    new_lat : numpy.array
+        New latitudes after regridding, must be increasing
+    new_lon : numpy.array
+        New longitudes after regridding, must be increasing
+    wgt_file : str
+        If desired, the weight file to be reused
+
+    Returns
+    -------
+    da_rg : xr.Dataset or xr.DataArray
+        Regridded datr
+    """
+
+    import xesmf as xe
+    import os
+    if os.path.isfile(wgt_file):
+        reuse_weights = True
+    else:
+        reuse_weights = False
+
+    if 'latitude' in da.coords:
+        da = da.rename({'latitude': 'lat', 'longitude': 'lon'})
+    if (da.lon.min() < 0) & (np.min(new_lon) > 0):
+        da = lon_to_360(da)
+    if (da.lon.min() > 0) & (np.min(new_lon) < 0):
+        da = lon_to_180(da)
+
+    # Latitude and longitude should be increasing
+    assert (new_lat[0] < new_lat[1])
+    assert (new_lon[0] < new_lon[1])
+    da = da.sortby('lat')
+    da = da.sortby('lon')
+
+    regridder = xe.Regridder({'lat': da.lat, 'lon': da.lon},
+                             {'lat': new_lat, 'lon': new_lon},
+                             'bilinear',
+                             periodic=True, reuse_weights=reuse_weights,
+                             filename=wgt_file)
+
+    da_rg = regridder(da)
+    return da_rg
