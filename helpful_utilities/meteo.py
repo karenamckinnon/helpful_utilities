@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def q_from_Td_p(Td, p):
+def q_from_Td_p(Td, p, return_vp=False):
     """
     Calculate specific humidity using approximations in McKinnon et al 2021, NCC.
 
@@ -11,12 +11,22 @@ def q_from_Td_p(Td, p):
         Dew point temperature in Celsius
     p : float or numpy array or xarray dataarray
         Surface pressure (hPa)
+    return_vp : bool
+        Return vapor pressure (hPa)?
 
     Returns
     -------
     q : float or numpy array or xarray datarray
         Specific humidity (g/kg)
     """
+
+    vp = 6.112 * np.exp(17.67 * Td) / (Td + 243.5)
+    q = 1000 * 0.622 * vp / (p - 0.378 * vp)
+
+    if return_vp:
+        return q, vp
+    else:
+        return q
 
 
 def Td_from_w_p(w, p):
