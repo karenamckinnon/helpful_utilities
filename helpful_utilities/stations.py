@@ -14,7 +14,7 @@ import os
 import xarray as xr
 
 
-def process_ghcnd(yr_start, yr_end, ghcnd_dir='/home/data/GHCND', var_names=['TMAX'], country_list=None):
+def process_ghcnd(yr_start, yr_end, ghcnd_dir='/home/data/GHCND', var_names=['TMAX', 'TMIN'], country_list=None):
     """This function will subset GHNCD dly files to ones that have sufficient coverage and, if desired, are in a
     specific set of countries.
 
@@ -193,6 +193,9 @@ def process_ghcnd(yr_start, yr_end, ghcnd_dir='/home/data/GHCND', var_names=['TM
                                 date_idx = (date_str.month == int(mon)) & (date_str.year == int(this_year))
                                 data_vec[date_idx] = values_np[:np.sum(date_idx)]/10  # change to degrees Celsius
 
+                # If no data
+                if np.isnan(data_vec).all():
+                    continue
                 # Remove starting and ending NaNs
                 start_idx = np.where(~np.isnan(data_vec))[0][0]
                 end_idx = np.where(~np.isnan(data_vec))[0][-1] + 1

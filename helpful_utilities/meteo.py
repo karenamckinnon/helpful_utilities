@@ -1,6 +1,22 @@
 import numpy as np
 
 
+def e_from_q_ps(q_gkg, ps_hpa):
+    """
+    Calculate vapor pressure from specific humidity and surface pressure.
+
+    Parameters:
+    q_gkg (float or array-like): Specific humidity in g/kg
+    ps_hpa (float or array-like): Surface pressure in hPa
+
+    Returns:
+    float or array-like: Vapor pressure in hPa
+    """
+    q_kgkg = q_gkg / 1000  # Convert g/kg to kg/kg
+    e_hpa = (q_kgkg * ps_hpa) / (0.622 + 0.378 * q_kgkg)
+    return e_hpa
+
+
 def q_from_Td_p(Td, p, return_vp=False):
     """
     Calculate specific humidity using approximations in McKinnon et al 2021, NCC.
@@ -20,7 +36,7 @@ def q_from_Td_p(Td, p, return_vp=False):
         Specific humidity (g/kg)
     """
 
-    vp = 6.112 * np.exp(17.67 * Td) / (Td + 243.5)
+    vp = 6.112 * np.exp((17.67 * Td) / (Td + 243.5))
     q = 1000 * 0.622 * vp / (p - 0.378 * vp)
 
     if return_vp:

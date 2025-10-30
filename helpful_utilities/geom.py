@@ -36,7 +36,8 @@ def get_regrid_country(country_name, country_folder, lats, lons, dilate=False):
     da_country = ncutils.rasterize(country['geometry'],
                                    {'lon': np.linspace(-179.5, 180, 1000),
                                     'lat': np.linspace(-90, 90, 1000)})
-    da_country = ncutils.lon_to_360(da_country)
+    if lons.min() >= 0:
+        da_country = ncutils.lon_to_360(da_country)
     da_country = da_country.fillna(0)
     da_country = da_country.interp({'lat': lats, 'lon': lons})
     if dilate:
